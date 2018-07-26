@@ -211,7 +211,7 @@ def qqpost(req):
                 if (receive["message"].find('/help')==0):
                    # print("here")
                    # msg = "/cat : 云吸猫\n/gakki : 云吸gakki\n/like : 赞\n/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/dps $boss $job $dps : 在最终幻想XIV中查询DPS在对应BOSS与职业的logs排名（国际服同期数据）\n/anime $img : 查询$img对应番剧(只支持1M以内静态全屏截图)\n/gif : 生成沙雕GIF\n/about : 关于獭獭\n/donate : 援助作者"
-                    msg = "/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/gif : 生成沙雕GIF\n/about : 关于库兰兰"
+                    msg = "/random(/gate) : 掷骰子/挖宝选门\n/search $item : 在最终幻想XIV中查询物品$item\n/gif : 生成沙雕GIF\n/about : 关于库兰兰"
 
                     msg = msg.strip()
                     reply_data = {"reply":msg}
@@ -237,10 +237,10 @@ def qqpost(req):
                     return JsonResponse(reply_data)
                 if (receive["message"].find('/about')==0):
                     res_data = {
-                        "url":"https://github.com/Bluefissure/FFXIVBOT",
-                        "title":"FFXIVBOT",
-                        "content":"by Bluefissure",
-                        "image":"https://i.loli.net/2018/05/06/5aeeda6f1fd4f.png",
+                        "url":"https://www.ourocg.cn/Cards/View-1667",
+                        "title":"黑魔导师 库兰",
+                        "content":"属性：暗 种族：魔法师 攻击：1200 防御：0",
+                        "image":"https://gss3.bdstatic.com/-Po3dSag_xI4khGkpoWK1HF6hhy/baike/c0%3Dbaike80%2C5%2C5%2C80%2C26/sign=9e3ca6c29525bc313f5009ca3fb6e6d4/8b82b9014a90f603c044ef4b3512b31bb151edc2.jpg",
                     }
                     reply_data = {"reply":[{"type":"share","data":res_data}]}
                     if(receive["message_type"]=="group"):
@@ -262,7 +262,7 @@ def qqpost(req):
                     random.shuffle(choose_list)
                     gate_idx = choose_list.index(gate)
                     gate_msg = "左边" if gate_idx==0 else "右边" if gate_idx==1 else "中间"
-                    reply_data = {"reply":"掐指一算，[CQ:at,qq=%s]应该走%s门，信獭獭没错！"%(receive["user_id"],gate_msg),"at_sender":"false"}
+                    reply_data = {"reply":"掐指一算，[CQ:at,qq=%s]不应该走%s门，不要信库兰的就对了！"%(receive["user_id"],gate_msg),"at_sender":"false"}
                     print("reply_data:%s"%(reply_data))
                     return JsonResponse(reply_data)
                 if (receive["message"].find('/random')==0):
