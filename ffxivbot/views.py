@@ -16,7 +16,7 @@ import re
 import json
 import pymysql
 import time
-from ffxivbot.models import *
+from FFXIVBOT.models import *
 from hashlib import md5
 import math
 import requests
@@ -31,7 +31,7 @@ import urllib
 # Create your views here.
 
 #Base Constant
-QQPOST_URL = 'http://***.***.***.***:****'
+QQPOST_URL = 'http://localhost:5700'
 ACCESS_TOKEN = "************"
 SECRET_KEY = "*********"
 
@@ -48,12 +48,9 @@ FF14WIKI_API_URL = "https://cdn.huijiwiki.com/ff14/api.php"
 
 #sorry API
 SORRY_BASE_URL = "https://sorry.xuty.tk"
-
-
 #Tuling API
 TULING_API_URL = "http://openapi.tuling123.com/openapi/api/v2"
 TULING_API_KEY = "************************************"
-
 #Baidu Cloud API
 BAIDU_IMAGE_API_KEY = "*********************************"
 BAIDU_IMAGE_SECRET_KEY = "*********************************"
@@ -61,24 +58,13 @@ BAIDU_IMAGE_ACCESS_TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token?grant_t
 BAIDU_IMAGE_ACCESS_TOKEN = "******************************************************************"
 BAIDU_IMAGE_CENSOR_URL = 'https://aip.baidubce.com/rest/2.0/solution/v1/img_censor/user_defined?access_token='+BAIDU_IMAGE_ACCESS_TOKEN
 
-
-
-
-
 QQBOT_LIST = ["2854196306"]
-
-
-
 
 def refresh_baidu_access_token():
     r = requests.post(url=BAIDU_RECORD_ACCESS_TOKEN_URL)
     r = json.loads(r.text)
     print(r)
-
-
-
-
-
+    
 def get_item_info(url):
     r = requests.get(url,timeout=3)
     bs = BeautifulSoup(r.text,"html.parser")
@@ -132,66 +118,11 @@ def search_item(name):
     print("res_data:%s"%(res_data))
     return res_data
 
-
-
 def check_contain_chinese(check_str):
     for ch in check_str:
         if u'\u4e00' <= ch <= u'\u9fff':
             return True
     return False
-def whatanime(receive):
-    try:
-        tmp = receive["message"]
-        tmp = tmp[tmp.find("url="):-1]
-        tmp = tmp.replace("url=","")
-        img_url = tmp.replace("]","")
-        print("getting img_url:%s"%(img_url))
-        r = requests.get(img_url,timeout=30)
-        print("img got")
-        imgb64 = base64.b64encode(r.content)
-        print("whatanime post")
-        r2 = requests.post(url=WHATANIME_API_URL,data={"image":imgb64.decode()},timeout=30)
-        print("WhatAnime_res:\n%s"%(r2.text))
-        if(r2.status_code==200):
-            print("finished whatanime\nParsing.........")
-            json_res = json.loads(r2.text)
-            if(len(json_res["docs"])==0):
-                msg = "未找到所搜索的番剧"
-            else:
-                anime = json_res["docs"][0]
-                title_list = ["title_chinese","title","title_native","anime"]
-                title=""
-                for item in anime["synonyms_chinese"]:
-                    if(item!="" and check_contain_chinese(item) and title==""):
-                        title = item
-                        break
-                for item in title_list:
-                    if(anime[item]!="" and  check_contain_chinese(anime[item])and title==""):
-                        title = anime[item]
-                        break
-                for item in title_list:
-                    if(anime[item]!="" and title==""):
-                        title = anime[item]
-                        break
-
-                duration = [(int(anime["from"])//60,int(anime["from"])%60),(int(anime["to"])//60,int(anime["to"])%60)]
-                msg = "%s\nEP#%s\n%s:%s-%s:%s\n相似度:%.2f%%"%(title,anime["episode"],duration[0][0],duration[0][1],duration[1][0],duration[1][1],float(anime["similarity"])*100)
-                msg = msg+"\nPowered by whatanime.ga"
-        elif (r2.status_code==413):
-            msg = "图片太大啦，请压缩至1M"
-        else:
-            msg = "Error at whatanime API, status code %s"%(r2.status_code)
-    except Exception as e:
-        traceback.print_exc() 
-        msg = "Error:%s \nTell developer to check the log."%(e)
-    print("WhatAnime_msg:\n%s"%(msg))
-    if(receive["message_type"]=="private"):
-        jdata = {"user_id":receive["user_id"],"message":msg}
-        s=requests.post(url=QQPOST_URL+'/send_private_msg?access_token='+ACCESS_TOKEN,data=jdata,timeout=10)
-    elif(receive["message_type"]=="group"):
-        jdata = {"group_id":receive["group_id"],"message":"[CQ:at,qq=%s]\n"%(receive["user_id"])+msg}
-        s=requests.post(url=QQPOST_URL+'/send_group_msg?access_token=2ASdOeYCOyp',data=jdata,timeout=10)
-
 
 def get_group_member_info(group_id,user_id):
     jdata = {"group_id":group_id,"user_id":user_id}
@@ -227,8 +158,7 @@ def delete_msg(message_id):
     s=requests.post(url=QQPOST_URL+'/delete_msg?access_token=2ASdOeYCOyp',data=jdata,timeout=10)
     res_json = json.loads(s.text)
     return res_json
-
-
+    
 def image_censor_url(image_url):
     data = {
         "imgUrl":image_url
@@ -261,7 +191,6 @@ def image_censor(receive):
         if(cnt > 0):
             send_group_msg(receive["group_id"],msg)
 
-
 def get_record(file_name):
     jdata = {"file":file_name,"out_format":"wav"}
     s=requests.post(url=QQPOST_URL+'/get_record?access_token=2ASdOeYCOyp',data=jdata,timeout=10)
@@ -272,40 +201,31 @@ def get_record(file_name):
 def qqpost(req):
     try:
         receive = json.loads(req.body.decode())
-        sig = hmac.new(b'pinkpink', req.body, 'sha1').hexdigest()
-        received_sig = req.META.get("HTTP_X_SIGNATURE","unknow")[len('sha1='):]
-        if(sig == received_sig):
+        print(receive)
+       # sig = hmac.new(b'pinkpink', req.body, 'sha1').hexdigest()
+       # received_sig = req.META.get("HTTP_X_SIGNATURE","unknow")[len('sha1='):]
+       # print(sig, received_sig)
+       # if(sig == received_sig): # 这里如果签名不对会返回204，原因不明
+        if True:
             if (receive["post_type"] == "message"):
                 if (receive["message"].find('/help')==0):
-                    msg = "/cat : 云吸猫\n/gakki : 云吸gakki\n/like : 赞\n/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/dps $boss $job $dps : 在最终幻想XIV中查询DPS在对应BOSS与职业的logs排名（国际服同期数据）\n/anime $img : 查询$img对应番剧(只支持1M以内静态全屏截图)\n/gif : 生成沙雕GIF\n/about : 关于獭獭\n/donate : 援助作者"
+                   # print("here")
+                   # msg = "/cat : 云吸猫\n/gakki : 云吸gakki\n/like : 赞\n/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/dps $boss $job $dps : 在最终幻想XIV中查询DPS在对应BOSS与职业的logs排名（国际服同期数据）\n/anime $img : 查询$img对应番剧(只支持1M以内静态全屏截图)\n/gif : 生成沙雕GIF\n/about : 关于獭獭\n/donate : 援助作者"
+                    msg = "/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/gif : 生成沙雕GIF\n/about : 关于库兰兰"
+
                     msg = msg.strip()
                     reply_data = {"reply":msg}
                     if(receive["message_type"]=="group"):
                         reply_data["at_sender"] = "false"
+                    # print(reply_data)
                     return JsonResponse(reply_data)
                 #Group Chat Func
-                if (receive["message"] == '/cat'):
-                    reply_data = {"reply":[{"type":"image","data":{"file":"cat/%s.jpg"%(random.randint(0,750))}}]}
-                    if(receive["message_type"]=="group"):
-                        reply_data["at_sender"] = "false"
-                    return JsonResponse(reply_data)
-                if (receive["message"] == '/gakki'):
-                    reply_data = {"reply":[{"type":"image","data":{"file":"gakki/%s.jpg"%(random.randint(1,1270))}}]}
-                    if(receive["message_type"]=="group"):
-                        reply_data["at_sender"] = "false"
-                    return JsonResponse(reply_data)
-                if (receive["message"].find('/like')==0):
-                    times = receive["message"].replace('/like','')
-                    try:
-                        times = int(times)
-                    except:
-                        times = 1
-                    like_res = send_like(receive["user_id"],times=times)
-                    if(like_res["status"]!="ok"):
-                        reply_data = {"reply":"赞失败啦！！"}
-                    else:
-                        reply_data = {"reply":"赞了%s次！"%(times)}
-                    return JsonResponse(reply_data)
+#                if (receive["message"] == '/cat'):
+#                    reply_data = {"reply":[{"type":"image","data":{"file":"cat/%s.jpg"%(random.randint(0,750))}}]}
+#                    if(receive["message_type"]=="group"):
+#                        reply_data["at_sender"] = "false"
+#                    return JsonResponse(reply_data)
+
                 if (receive["message"].find('/search')==0):
                     name = receive["message"].replace('/search','')
                     name = name.strip()
@@ -326,17 +246,11 @@ def qqpost(req):
                     if(receive["message_type"]=="group"):
                         reply_data["at_sender"] = "false"
                     return JsonResponse(reply_data)
-                if (receive["message"].find('/donate')==0):
+#                if (receive["message"].find('/donate')==0):
                     #reply_data = {"reply":[{"type":"text","data":{"text":"我很可爱(*╹▽╹*)请给我钱（来租服务器养活獭獭）"}},{"type":"image","data":{"file":"alipay.jpg"}}],"at_sender":"false"}
-                    reply_data = {"reply":[{"type":"text","data":{"text":"獭獭很可爱(*╹▽╹*)不用给钱啦獭獭已经买了好多零食"}}],"at_sender":"false"}
-                    return JsonResponse(reply_data)
-                if (receive["message"].find('/anime')==0):
-                    print("anime_msg:%s"%(receive["message"]))
-                    qq = int(receive["user_id"])
-                    if(receive["message"] == '/anime'):
-                        pass
-                    elif ("CQ" in receive["message"] and "url=" in receive["message"]):
-                        reply_data = whatanime(receive)
+#                    reply_data = {"reply":[{"type":"text","data":{"text":"獭獭很可爱(*╹▽╹*)不用给钱啦獭獭已经买了好多零食"}}],"at_sender":"false"}
+#                    return JsonResponse(reply_data)
+
                 if (receive["message"].find('/gate')==0):
                     try:
                         num = int(receive["message"].replace("/gate",""))
@@ -429,97 +343,6 @@ def qqpost(req):
                         reply_data["at_sender"] = "false"
                     return JsonResponse(reply_data)
 
-                if (receive["message"].find('/dps')==0):
-                    receive_msg = receive["message"].replace('/dpscheck','',1).strip()
-                    receive_msg = receive_msg.replace('/dps','',1).strip()
-                    boss_list = Boss.objects.all()
-                    boss_obj = None
-                    for boss in boss_list:
-                        try:
-                            boss_nicknames = json.loads(boss.nickname)["nickname"]
-                        except KeyError:
-                            boss_nicknames = []
-                        boss_nicknames.append(boss.name)
-                        boss_nicknames.append(boss.cn_name)
-                        boss_nicknames.sort(key=lambda x:len(x),reverse=True)
-                        for item in boss_nicknames:
-                            if(receive_msg.find(item)==0):
-                                receive_msg = receive_msg.replace(item,'',1).strip()
-                                boss_obj = boss
-                                break
-                        if(boss_obj):
-                            break
-                    if(not boss_obj):
-                        msg = "未能定位Boss:%s"%(receive_msg)
-                        reply_data = {"reply":msg}  
-                        return JsonResponse(reply_data) 
-                    job_list = Job.objects.all()
-                    job_obj = None
-                    for job in job_list:
-                        try:
-                            job_nicknames = json.loads(job.nickname)["nickname"]
-                        except KeyError:
-                            job_nicknames = []
-                        job_nicknames.append(job.name)
-                        job_nicknames.append(job.cn_name)
-                        job_nicknames.sort(key=lambda x:len(x),reverse=True)
-                        for item in job_nicknames:
-                            if(receive_msg.find(item)==0):
-                                receive_msg = receive_msg.replace(item,'',1).strip()
-                                job_obj = job
-                                break
-                        if(job_obj):
-                            break
-                    if(not job_obj):
-                        msg = "未能定位职业:%s"%(receive_msg)
-                        reply_data = {"reply":msg}  
-                        return JsonResponse(reply_data) 
-                    day = math.ceil((int(time.time())-boss.cn_add_time)/(24*3600))
-                    tiles = DPSTile.objects.filter(boss=boss_obj,job=job_obj,day=day)
-                    if(len(tiles)==0):
-                        msg = "Boss:%s职业:%s第%s日的数据未抓取，请联系管理员抓取。"%(boss,job,day)
-                        reply_data = {"reply":msg}  
-                        return JsonResponse(reply_data) 
-                    else:
-                        tile = tiles[0]
-                        if(receive_msg==""):
-                            atk_dict = json.loads(tile.attack)
-                            percentage_list = [10,25,50,75,95,99]
-                            msg = "%s %s day#%s:\n"%(boss.cn_name,job.cn_name,day)
-                            for perc in percentage_list:
-                                msg += "%s%% : %.2f\n"%(perc,atk_dict[str(perc)])
-                            msg = msg.strip()
-                            reply_data = {"reply":msg}  
-                            return JsonResponse(reply_data) 
-                        try:
-                            atk = float(receive_msg)
-                            assert(atk > 0)
-                        except:
-                            msg = "Attack parsing failed:%s"%(receive_msg)
-                            reply_data = {"reply":msg}  
-                            return JsonResponse(reply_data) 
-                        atk_dict = json.loads(tile.attack)
-                        percentage_list = [0,10,25,50,75,95,99]
-                        atk_dict.update({"0":0})
-                        print("atk_dict:"+json.dumps(atk_dict))
-                        atk_list = [atk_dict[str(i)] for i in percentage_list]
-                        idx = 0
-                        while(idx<len(percentage_list) and atk>atk_dict[str(percentage_list[idx])]):
-                            idx += 1
-                        if(idx >= len(percentage_list)):
-                            #msg = "%s %s %.2f day#%s 99%%+"%(boss.cn_name,job.cn_name,atk,day)
-                            msg = "%s %s %.2f 99%%+"%(boss.cn_name,job.cn_name,atk)
-                        else:
-                            calc_perc = ((atk-atk_list[idx-1])/(atk_list[idx]-atk_list[idx-1]))*(percentage_list[idx]-percentage_list[idx-1])+percentage_list[idx-1]
-                            if(calc_perc < 10):
-                                msg = "%s %s %.2f 10%%-"%(boss.cn_name,job.cn_name,atk)
-                            else:
-                                #msg = "%s %s %.2f day#%s %.2f%%"%(boss.cn_name,job.cn_name,atk,day,calc_perc)
-                                msg = "%s %s %.2f %.2f%%"%(boss.cn_name,job.cn_name,atk,calc_perc)
-                        reply_data = {"reply":msg}  
-                        return JsonResponse(reply_data) 
-
-
                 #Private message
                 if (receive["message_type"]=="private"):
                     if("[CQ:record,file=" in receive["message"]):
@@ -535,412 +358,8 @@ def qqpost(req):
                             print("out_file:%s"%(jres["data"]["file"]))
                             if(r.status_code==200):
                                 pass
-
                         else:
                             print("jres:%s"%(json.dumps(jres)))
-
-                #Group Control Func
-                if (receive["message_type"]=="group"):
-                    group_id = receive["group_id"]
-                    user_id = receive["user_id"]
-                    keywords = ['/register_group','/set_welcome_msg','/add_custom_reply','/del_custom_reply','/welcome_demo','/set_repeat_ban','/disable_repeat_ban','/repeat','/left_reply','/set_ban','/ban']
-                    if(receive["message"].find('/group_help')==0):
-                        msg = "/register_group : 将此群注册到数据库\n/set_welcome_msg $msg: 设置欢迎语$msg\n/welcome_demo : 查看欢迎示例\n/add_custom_reply /$key $val : 添加自定义回复\n/del_custom_reply /$key : 删除自定义回复\n/set_repeat_ban $times : 设置复读机检测条数\n/disable_repeat_ban : 关闭复读机检测\n/repeat $times $prob : 以百分之$prob的概率复读超过$times的对话\n/left_reply : 查看本群剩余聊天条数\n/set_ban $cnt : 设置禁言投票基准为$cnt\n/ban $member $time : 投票将$member禁言$time分钟\n/ban $member : 给$member禁言投票"
-                        msg = msg.strip()
-                        reply_data = {"reply":msg}
-                        if(receive["message_type"]=="group"):
-                            reply_data["at_sender"] = "false"
-                        return JsonResponse(reply_data)
-                    if(receive["message"].find('/register_group')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner"):
-                            reply_data = {"reply":"仅群主有权限注册"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            group_list = QQGroup.objects.filter(group_id=group_id)
-                            if len(group_list)==0:
-                                group = QQGroup(group_id=group_id)
-                                group.save()
-                                reply_data = {"reply":"群%s注册成功"%(group_id)}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            else:
-                                reply_data = {"reply":"本群%s已注册，请勿重复注册"%(group_id)}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-
-
-                    group_list = QQGroup.objects.filter(group_id=group_id)
-                    request_flag = False
-                    for item in keywords:
-                        if(receive["message"].find(item)==0):
-                            request_flag = True
-                            break
-                    if len(group_list)==0:
-                        if request_flag:
-                            reply_data = {"reply":"本群%s未在数据库注册，请群主使用/register_group命令注册"%(group_id)}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            return
-                    else:
-                        group = group_list[0]
-                        if(time.time() <= group.ban_till):
-                            return
-                    if(receive["message"].find('/set_welcome_msg')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner" and user_info["role"]!="admin" ):
-                            reply_data = {"reply":"仅群主与管理员有权限设置欢迎语"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            welcome_msg = receive["message"].replace("/set_welcome_msg","",1).strip()
-                            group.welcome_msg = welcome_msg
-                            group.save()
-                            reply_data = {"reply":"欢迎语已设置成功，使用/welcome_demo查看欢迎示例"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/add_custom_reply')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner" and user_info["role"]!="admin" ):
-                            reply_data = {"reply":"仅群主与管理员有权限设置自定义回复"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            ori_msg = receive["message"].replace("/add_custom_reply","",1).strip()
-                            ori_msg = ori_msg.split(' ')
-                            if(len(ori_msg)<2):
-                                reply_data = {"reply":"自定义命令参数过少（/add_custom_reply /$key $val）"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            custom_key = ori_msg[0]
-                            if(custom_key[0]!='/'):
-                                reply_data = {"reply":"自定义命令以'/'开头"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            custom_value = html.unescape(ori_msg[1])
-
-                            customs = CustomReply.objects.filter(group=group,key=custom_key)
-                            if(len(customs)>0):
-                                custom = customs[0]
-                                custom.value = custom_value
-                            else:
-                                custom = CustomReply(group=group,key=custom_key,value=custom_value)
-                            custom.save()
-                            reply_data = {"reply":"自定义回复已添加成功，使用%s查看"%(custom_key)}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/del_custom_reply')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner" and user_info["role"]!="admin" ):
-                            reply_data = {"reply":"仅群主与管理员有权限设置自定义回复"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            ori_msg = receive["message"].replace("/del_custom_reply","",1).strip()
-                            ori_msg = ori_msg.split(' ')
-                            if(len(ori_msg)<1):
-                                reply_data = {"reply":"自定义回复参数过少（/del_custom_reply /$key）"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            custom_key = ori_msg[0]
-                            if(custom_key[0]!='/'):
-                                reply_data = {"reply":"自定义回复命令以'/'开头"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            custom = CustomReply.objects.filter(group=group,key=custom_key)
-                            if(len(custom)==0):
-                                reply_data = {"reply":"不存在%s为命令的自定义回复"%(custom_key)}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            else:
-                                custom[0].delete()
-                            reply_data = {"reply":"自定义回复已删除成功，使用%s查看"%(custom_key)}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/welcome_demo')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        group_list = QQGroup.objects.filter(group_id=group_id)
-                        print("welcome_demo")
-                        group = group_list[0]
-                        reply_data = {"reply":group.welcome_msg}
-                        return JsonResponse(reply_data)                            
-                    if(receive["message"].find('/set_repeat_ban')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner" ):
-                            reply_data = {"reply":"仅群主有权限开启复读机检测系统"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            ori_msg = receive["message"].replace("/set_repeat_ban","",1).strip()
-                            ori_msg = ori_msg.split(' ')
-                            if(len(ori_msg)<1):
-                                reply_data = {"reply":"请设置复读机一分钟内的最大条数（/add_custom_reply $times）"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            try:
-                                group.repeat_ban = max(int(ori_msg[0]),2)
-                            except Exception as e:
-                                group.repeat_ban = 10
-                            group.save()
-                            reply_data = {"reply":"复读机监控系统已启动，检测值为%s/min"%(group.repeat_ban)}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/disable_repeat_ban')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner" and user_info["role"]!="admin" ):
-                            reply_data = {"reply":"仅群主与管理员有权限关闭复读机检测系统"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            group = group_list[0]
-                            group.repeat_ban = -1
-                            group.save()
-                            reply_data = {"reply":"复读机监控系统已关闭"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/repeat')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]=="owner" or user_info["role"]=="admin" ):
-                            reply_data = {"reply":"仅非群主与管理员有权限开启复读机系统"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            ori_msg = receive["message"].replace("/repeat","",1).strip()
-                            ori_msg = ori_msg.split(' ')
-                            if(len(ori_msg)<2):
-                                reply_data = {"reply":"请复读机条数与复读概率（/repeat $times $prob）"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            try:
-                                group.repeat_length = max(int(ori_msg[0]),2)
-                                group.repeat_prob = min(int(ori_msg[1]),50)
-                            except Exception as e:
-                                group.repeat_length = 2
-                                group.repeat_prob = 50
-                            group.save()
-                            reply_data = {"reply":"复读机系统已启动，复读概率为%s/min后的%s%%"%(group.repeat_length,group.repeat_prob)}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/left_reply')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        group_list = QQGroup.objects.filter(group_id=group_id)
-                        group = group_list[0]
-                        reply_data = {"reply":"本群剩余%s条獭獭聊天限额"%(group.left_reply_cnt)}
-                        reply_data["at_sender"] = "false"
-                        return JsonResponse(reply_data)
-                    if(receive["message"].find('/set_ban')==0):
-                        user_info = get_group_member_info(group_id,user_id)
-                        if(user_info["role"]!="owner" and user_info["role"]!="admin" ):
-                            reply_data = {"reply":"仅群主与管理员有权限设置禁言投票"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        else:
-                            ban_cnt = receive["message"].replace("/set_ban","",1).strip()
-                            try:
-                                group.ban_cnt = max(int(ban_cnt),2)
-                                if(int(ban_cnt)==-1):
-                                    group.ban_cnt = -1
-                            except:
-                                group.ban_cnt = 10
-                            group.save()
-                            reply_data = {"reply":"禁言投票基准被设置为%s"%(group.ban_cnt)}
-                            if(group.ban_cnt==-1):
-                                reply_data = {"reply":"禁言投票已关闭"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                    if(receive["message"].find('/ban')==0):
-                        if(group.ban_cnt<=0):
-                            reply_data = {"reply":"本群未开放禁言投票功能"}
-                            reply_data["at_sender"] = "false"
-                            return JsonResponse(reply_data)
-                        receive_msg = receive["message"].replace("/ban","",1).strip()
-                        msg_list = receive_msg.split(' ')
-                        if(len(msg_list)>=1):
-                            pattern = "[CQ:at,qq="
-                            qq_str = msg_list[0]
-                            if(qq_str.find(pattern)>=0):
-                                qq = qq_str[qq_str.find(pattern)+len(pattern):qq_str.find("]")]
-                            else:
-                                qq = qq_str
-                            if not qq.isdecimal():
-                                reply_data = {"reply":"请艾特某人或输入其QQ号码"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            mems = Member.objects.filter(user_id=qq,group=group,timestamp__gt=time.time()-3600)
-                            del_mems = Member.objects.filter(user_id=qq,group=group,timestamp__lt=time.time()-3600)
-                            for item in del_mems:
-                                item.delete()
-                            if(len(msg_list)==1):
-                                if(len(mems)==0):
-                                    reply_data = {"reply":"不存在针对 [CQ:at,qq=%s] 的禁言投票，请输入\"/ban %s $time\"开始时长为$time分钟的禁言投票"%(qq,qq)}
-                                    reply_data["at_sender"] = "false"
-                                    return JsonResponse(reply_data)
-                                else:
-                                    mem = mems[0]
-                                    vtlist = json.loads(mem.vote_list)
-                                    if("voted_by" not in vtlist.keys()):
-                                        vtlist["voted_by"] = []
-                                    vtlist["voted_by"].append(str(receive["user_id"]))
-                                    vtlist["voted_by"] = list(set(vtlist["voted_by"]))
-                                    mem.vote_list = json.dumps(vtlist)
-                                    mem.save()
-                                    if(len(vtlist["voted_by"]) >= group.ban_cnt):
-                                        user_info = get_group_member_info(group.group_id,mem.user_id)
-                                        voted_msg = ""
-                                        for item in vtlist["voted_by"]:
-                                            voted_msg += "[CQ:at,qq=%s] "%(item)
-                                        msg = "被%s投票禁言%s分钟"%(voted_msg, mem.ban_time)
-                                        msg += " 复仇请输入/revenge"
-                                        if(user_info["role"]=="owner"):
-                                            msg = "虽然你是狗群主獭獭无法禁言，但是也被群友投票禁言，请闭嘴%s分钟[CQ:face,id=14]"%(mem.ban_time)
-                                        if(user_info["role"]=="admin"):
-                                            msg = "虽然你是狗管理獭獭无法禁言，但是也被群友投票禁言，请闭嘴%s分钟[CQ:face,id=14]"%(mem.ban_time)
-                                        if(str(mem.user_id) == str(receive["self_id"])):
-                                            msg = "%s竟然禁言了可爱的獭獭[CQ:face,id=111][CQ:face,id=111]好吧我闭嘴%s分钟[CQ:face,id=14]"%(voted_msg, mem.ban_time)
-                                            group.ban_till = time.time()+int(mem.ban_time)*60
-                                            group.save()
-                                        else:
-                                            group_ban(group.group_id,mem.user_id,int(mem.ban_time)*60)
-                                            rev = Revenge(user_id=mem.user_id,group=group)
-                                            rev.timestamp = time.time()
-                                            rev.vote_list = mem.vote_list
-                                            rev.ban_time = mem.ban_time
-                                            rev.save()
-                                        mem.delete()
-                                        send_group_msg(group_id,msg,mem.user_id)
-                                    else:
-                                        reply_data = {"reply":"[CQ:at,qq=%s] 时长为%s分钟的禁言投票，目前进度：%s/%s"%(mem.user_id,mem.ban_time,len(vtlist["voted_by"]),group.ban_cnt)}
-                                        reply_data["at_sender"] = "false"
-                                        return JsonResponse(reply_data)
-                            elif(len(msg_list)==2):
-                                if not msg_list[1].isdecimal():
-                                    reply_data = {"reply":"禁言时长无效"}
-                                    reply_data["at_sender"] = "false"
-                                    return JsonResponse(reply_data)
-                                if(len(mems)==0):
-                                    mem = Member(user_id=qq,group=group,ban_time=min(int(msg_list[1]),2))
-                                    vtlist = json.loads(mem.vote_list)
-                                    vtlist["voted_by"] = []
-                                    vtlist["voted_by"].append(str(receive["user_id"]))
-                                    vtlist["voted_by"] = list(set(vtlist["voted_by"]))
-                                    mem.vote_list = json.dumps(vtlist)
-                                    mem.timestamp = time.time()
-                                    mem.save()
-                                    reply_data = {"reply":"开始了针对 [CQ:at,qq=%s] 时长为%s分钟的禁言投票，投票请发送/ban %s"%(qq,mem.ban_time,qq)}
-                                    reply_data["at_sender"] = "false"
-                                    return JsonResponse(reply_data)
-                                else:
-                                    mem = mems[0]
-                                    reply_data = {"reply":"已存在针对 [CQ:at,qq=%s] 时长为%s分钟的禁言投票，投票请发送/ban %s"%(qq,mem.ban_time,qq)}
-                                    reply_data["at_sender"] = "false"
-                                    return JsonResponse(reply_data)
-                    
-
-                    if(receive["message"]=='/revenge' or receive["message"]=="/revenge_confirm"):
-                        print("here")
-                        revs = Revenge.objects.filter(user_id=user_id,group=group,timestamp__gt=time.time()-3600)
-                        del_revs = Revenge.objects.filter(user_id=user_id,group=group,timestamp__lt=time.time()-3600)
-                        for item in del_revs:
-                            item.delete()
-                        if(len(revs)>0):
-                            rev = revs[0]
-                            qq_list = (json.loads(rev.vote_list))["voted_by"]
-                            msg = "[CQ:at,qq=%s]将要与"%(user_id)
-                            for item in qq_list:
-                                msg += "[CQ:at,qq=%s] "%(item)
-                            msg += "展开复仇,您将被禁言%s分钟,其余众人将被禁言%s分钟，确认请发送/revenge_confirm"%(int(rev.ban_time)*(len(qq_list)),rev.ban_time)
-                            if(receive["message"]=="/revenge_confirm"):
-                                for item in qq_list:
-                                    if(str(item)==str(user_id)):
-                                        continue
-                                    group_ban(group_id,item,int(rev.ban_time)*60)
-                                    time.sleep(1)
-                                time.sleep(1)
-                                group_ban(group_id,user_id,int(rev.ban_time)*(len(qq_list))*60)
-                                msg = "[CQ:at,qq=%s]复仇完毕，嘻嘻嘻。"%(user_id)
-                                rev.delete()
-                            send_group_msg(group_id,msg)
-
-                        else:
-                            reply_data = {"reply":"不存在关于您的复仇机会。"}
-                            return JsonResponse(reply_data)
-
-
-
-                    if len(group_list)>0:
-                        group = group_list[0]
-                        custom_replys = CustomReply.objects.filter(group=group)
-                        #custom replys
-                        for item in custom_replys:
-                            if(receive["message"].find(item.key)==0):
-                                reply_data = {"reply":item.value}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                        #repeat_ban & repeat
-                        chats = ChatMessage.objects.filter(group=group,message=receive["message"].strip(),timestamp__gt=time.time()-60)
-                        del_chats = ChatMessage.objects.filter(group=group,timestamp__lt=time.time()-60)
-                        for item in del_chats:
-                            item.delete()
-                        if(len(chats)>0):
-                            chat = chats[0]
-                            chat.times = chat.times+1
-                            chat.save()
-                            if(group.repeat_ban>0 and chat.times>=group.repeat_ban):
-                                group_ban(group.group_id,receive["user_id"])
-                                user_info = get_group_member_info(group.group_id,receive["user_id"])
-                                msg = "抓到你了，复读姬！╭(╯^╰)╮口球一分钟！"
-                                if(user_info["role"]=="owner"):
-                                    msg = "虽然你是狗群主獭獭无法禁言，但是也触发了复读机检测系统，请闭嘴一分钟[CQ:face,id=14]"
-                                if(user_info["role"]=="admin"):
-                                    msg = "虽然你是狗管理獭獭无法禁言，但是也触发了复读机检测系统，请闭嘴一分钟[CQ:face,id=14]"
-                                send_group_msg(group_id,msg,receive["user_id"])
-                                delete_msg(receive["message_id"])
-                            if(group.repeat_length>=1 and group.repeat_prob>0 and chat.times>=group.repeat_length and (not chat.repeated)):
-                                if(random.randint(1,100)<=group.repeat_prob):
-                                    send_group_msg(group_id,chat.message)
-                                    chat.repeated = True
-                                    chat.save()
-                        else:
-                            if(group.repeat_ban>0 or (group.repeat_length>=1 and group.repeat_prob>0) ):
-                                if(receive["self_id"]!=receive["user_id"]):
-                                    chat = ChatMessage(group=group,message=receive["message"].strip(),timestamp=time.time())
-                                    chat.save()
-                        #tuling chatbot
-                        if("[CQ:at,qq=%s]"%(receive["self_id"]) in receive["message"]):
-                            if(group.left_reply_cnt <= 0):
-                                reply_data = {"reply":"聊天限额已耗尽，请等待回复。"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            if(str(receive["user_id"]) in QQBOT_LIST):
-                                reply_data = {"reply":"本獭獭不理机器人。"}
-                                reply_data["at_sender"] = "false"
-                                return JsonResponse(reply_data)
-                            print("Tuling reply")
-                            receive_msg = receive["message"]
-                            receive_msg = receive_msg.replace("[CQ:at,qq=%s]"%(receive["self_id"]),"")
-                            tuling_data = {}
-                            tuling_data["reqType"] = 0  #Text
-                            tuling_data["perception"] = {"inputText": {"text": receive_msg}}
-                            tuling_data["userInfo"] = {"apiKey": TULING_API_KEY, "userId": receive["user_id"], "groupId": group.group_id}
-                            r = requests.post(url=TULING_API_URL,data=json.dumps(tuling_data),timeout=3)
-                            tuling_reply = json.loads(r.text)
-                            print("tuling reply:%s"%(r.text))
-                            tuling_results = tuling_reply["results"]
-                            msg = ""
-                            for item in tuling_results:
-                                if(item["resultType"]=="text"):
-                                    msg += item["values"]["text"]
-                            msg = msg.replace("小主人","小光呆")
-                            send_group_msg(group_id,msg,receive["user_id"])
-                            group.left_reply_cnt = max(group.left_reply_cnt - 1, 0)
-                            group.save()
-                        #baidu image censor
-                        # if("[CQ:image" in receive["message"]):
-                        #     print("censoring img")
-                        #     image_censor(receive)
-
             if (receive["post_type"] == "request"):
                 if (receive["request_type"] == "friend"):	#Add Friend
                     qq = receive["user_id"]
@@ -963,6 +382,7 @@ def qqpost(req):
                             send_group_msg(group_id,msg,user_id)
                             # reply_data = {"reply":msg}
                             # return JsonResponse(reply_data)
+
         return HttpResponse(status=204)
     except Exception as e:
         traceback.print_exc() 

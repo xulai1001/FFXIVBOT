@@ -15,15 +15,13 @@ import json
 import re
 from django.db import connection, connections
 django.setup()
-from ffxivbot.models import *
+from FFXIVBOT.models import *
 
 def progress(percent,width=50):
     if percent >= 100:
         percent=100
     show_str=('[%%-%ds]' %width) %(int(width * percent/100)*"#") 
     print('\r%s %d%%' %(show_str,percent),end='')
-
-
 
 def crawl_dps(boss,job):
 	fflogs_url = 'https://www.fflogs.com/zone/statistics/table/%s/dps/%s/100/8/1/75/1000/7/0/Global/%s/All/normalized/single/0/-1/'%(boss.quest.quest_id,boss.boss_id,job.name)
@@ -59,8 +57,7 @@ def crawl_dps(boss,job):
 		tl.save()
 		progress((day+1)*100/len(find_res))
 	return tot_days
-
-
+	
 if __name__=="__main__":
 	bs = Boss.objects.all()
 	js = Job.objects.all()
