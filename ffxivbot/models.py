@@ -73,7 +73,27 @@ class DPSTile(models.Model):
 		unique_together = ('boss', 'job', 'day',)
 	def __str__(self):
 		return str("%s_%s_%s_%s"%(self.boss,self.job,self.day))
-
-
-
-
+		
+class FFwall(models.Model):
+	Id = models.TextField(primary_key=True)
+	AreaId = models.IntegerField()
+	AreaName = models.TextField()
+	GroupId = models.IntegerField()
+	GroupName = models.TextField()
+	CharacterId = models.TextField()
+	RoleId = models.IntegerField()
+	RoleName = models.TextField()
+	BigImage = models.TextField()
+	SmallImage = models.TextField()
+	uid = models.TextField()
+	tags = models.TextField()
+	
+	def __str__(self):
+		return str("%s_%s_%s_%s" % (self.Id, self.GroupName, self.CharacterId, self.RoleName))
+		
+class FFrecipe(models.Model):
+	name = models.TextField(primary_key=True)
+	recipe = models.TextField()
+	
+	def __str__(self):
+		return str("%s_%s" % (self.name, self.recipe))

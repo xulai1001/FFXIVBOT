@@ -27,8 +27,20 @@ import codecs
 import html
 import hmac
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import urllib
 # Create your views here.
+from FFXIVBOT.models import *
+
+# ffwall count
+ffwall_count = FFwall.objects.count()
+
+# crawler for pzz
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+options.add_argument("--window-size=1920x1080")
 
 #Base Constant
 QQPOST_URL = 'http://localhost:5700'
@@ -58,7 +70,7 @@ BAIDU_IMAGE_ACCESS_TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token?grant_t
 BAIDU_IMAGE_ACCESS_TOKEN = "******************************************************************"
 BAIDU_IMAGE_CENSOR_URL = 'https://aip.baidubce.com/rest/2.0/solution/v1/img_censor/user_defined?access_token='+BAIDU_IMAGE_ACCESS_TOKEN
 
-QQBOT_LIST = ["2854196306"]
+QQBOT_LIST = [2746433796]
 
 def refresh_baidu_access_token():
     r = requests.post(url=BAIDU_RECORD_ACCESS_TOKEN_URL)
@@ -138,6 +150,8 @@ def send_group_msg(group_id,msg,at_user_id=None):
     s=requests.post(url=QQPOST_URL+'/send_group_msg?access_token=2ASdOeYCOyp',data=jdata,timeout=10)
     res_json = json.loads(s.text)
     return res_json
+    
+send_group_msg(23429055, "库兰兰Bot已经启动！请多指教！@_@", 188223673)
 
 def group_ban(group_id,user_id,duration=60):
     jdata = {"group_id":group_id,"user_id":user_id,"duration":duration}
@@ -206,12 +220,15 @@ def qqpost(req):
        # received_sig = req.META.get("HTTP_X_SIGNATURE","unknow")[len('sha1='):]
        # print(sig, received_sig)
        # if(sig == received_sig): # 这里如果签名不对会返回204，原因不明
-        if True:
+        if receive["user_id"] in QQBOT_LIST:
+            print("-- BOT: not answering --")
+            return HttpResponse(status=204)
+        else:
             if (receive["post_type"] == "message"):
                 if (receive["message"].find('/help')==0):
                    # print("here")
                    # msg = "/cat : 云吸猫\n/gakki : 云吸gakki\n/like : 赞\n/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/dps $boss $job $dps : 在最终幻想XIV中查询DPS在对应BOSS与职业的logs排名（国际服同期数据）\n/anime $img : 查询$img对应番剧(只支持1M以内静态全屏截图)\n/gif : 生成沙雕GIF\n/about : 关于獭獭\n/donate : 援助作者"
-                    msg = "/random(/gate) : 掷骰子/挖宝选门\n/search $item : 在最终幻想XIV中查询物品$item\n/gif : 生成沙雕GIF\n/about : 关于库兰兰"
+                    msg = "/p：查询ulk强风时间(抓取自https://xivwb.gitee.io/)\n/ffwall：云吸光战(大雾)\n/random(/gate) : 掷骰子/挖宝选门\n/search $item : 在最终幻想XIV中查询物品$item\n/gif : 生成沙雕GIF\n/about : 关于库兰兰"
 
                     msg = msg.strip()
                     reply_data = {"reply":msg}
@@ -360,6 +377,9 @@ def qqpost(req):
                                 pass
                         else:
                             print("jres:%s"%(json.dumps(jres)))
+                # other situations
+                return reply_curran(receive)
+                
             if (receive["post_type"] == "request"):
                 if (receive["request_type"] == "friend"):	#Add Friend
                     qq = receive["user_id"]
@@ -386,3 +406,52 @@ def qqpost(req):
         return HttpResponse(status=204)
     except Exception as e:
         traceback.print_exc() 
+
+def reply_curran(recv):
+    answered = False
+    cr_debug = False
+    args = recv["message"].split(" ")    
+    print(args)
+    if "-dbg" in args: cr_debug = True
+    ret = {"reply": ""}
+    
+    # disable group at
+    if recv["message_type"] != "private": ret["at_sender"] = False
+    
+    # commands
+    # ffwall
+    if args[0] == "/ffwall":
+        # ret["reply"] = ffwall_count.__str__()
+        if len(args) >= 3:
+            items = FFwall.objects.filter(GroupName=args[1], RoleName=args[2])
+        else:
+            items = FFwall.objects.filter(Id=random.randint(1, ffwall_count))
+        if items:
+            img = items[0].BigImage
+            ret["reply"] = {"type":"image","data":{"file":img} }
+        else:
+            ret["reply"] = "没有找到玩家:%s（须参加过三周年活动）" % args[2]
+        answered = True
+    if args[0] == "/p":
+        # grabbed from https://xivwb.gitee.io/#eure-1
+        br = webdriver.Chrome(chrome_options=options, executable_path='C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe') # latest version for chrome
+        br.get("https://xivwb.gitee.io/#eure-1")
+        br.implicitly_wait(10)
+        # print("***** %s" % br.page_source)
+        lines = br.find_elements_by_xpath("//div[@class='match']/table/tbody/tr")
+        t = []
+        for li in lines[:3]:
+            items = li.find_elements_by_xpath("td")
+            t.append(u"【强风】 %s 持续 %s" % (items[0].text.split(" ")[1], items[2].text))
+        ret["reply"] = "\n".join(t)
+        answered = True
+        br.quit()
+        
+    # post-process
+    if answered:
+        if cr_debug:
+            ret["reply"] = "recv: %s\nargs: %s\nreturn: %s" % (json.dumps(recv), json.dumps(args), json.dumps(ret))
+        return JsonResponse(ret)
+    else:
+        return HttpResponse(status=204)
+    
