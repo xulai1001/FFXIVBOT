@@ -151,7 +151,7 @@ def send_group_msg(group_id,msg,at_user_id=None):
     res_json = json.loads(s.text)
     return res_json
     
-send_group_msg(23429055, "库兰兰Bot已经启动！请多指教！@_@", 188223673)
+send_group_msg(23429055, u"库兰兰Bot已经启动！请多指教！@_@", 188223673)
 
 def group_ban(group_id,user_id,duration=60):
     jdata = {"group_id":group_id,"user_id":user_id,"duration":duration}
@@ -228,7 +228,7 @@ def qqpost(req):
                 if (receive["message"].find('/help')==0):
                    # print("here")
                    # msg = "/cat : 云吸猫\n/gakki : 云吸gakki\n/like : 赞\n/random(gate) : 掷骰子\n/search $item : 在最终幻想XIV中查询物品$item\n/dps $boss $job $dps : 在最终幻想XIV中查询DPS在对应BOSS与职业的logs排名（国际服同期数据）\n/anime $img : 查询$img对应番剧(只支持1M以内静态全屏截图)\n/gif : 生成沙雕GIF\n/about : 关于獭獭\n/donate : 援助作者"
-                    msg = "/p：查询ulk强风时间(抓取自https://xivwb.gitee.io/)\n/ffwall：云吸光战(大雾)\n/random(/gate) : 掷骰子/挖宝选门\n/search $item : 在最终幻想XIV中查询物品$item\n/gif : 生成沙雕GIF\n/about : 关于库兰兰"
+                    msg = "/p：查询ulk强风时间(抓取自https://xivwb.gitee.io/)\n/ffwall：云吸光战(大雾)\n/random(/gate) : 掷骰子/挖宝选门\n/find $item : 在最终幻想XIV中查询物品$item\n/g : 生成沙雕GIF\n/about : 关于库兰兰"
 
                     msg = msg.strip()
                     reply_data = {"reply":msg}
@@ -243,8 +243,8 @@ def qqpost(req):
 #                        reply_data["at_sender"] = "false"
 #                    return JsonResponse(reply_data)
 
-                if (receive["message"].find('/search')==0):
-                    name = receive["message"].replace('/search','')
+                if (receive["message"].find('/find')==0):
+                    name = receive["message"].replace('/find','')
                     name = name.strip()
                     res_data = search_item(name)
                     if res_data:
@@ -308,10 +308,10 @@ def qqpost(req):
                     reply_data = {"reply":"[CQ:at,qq=%s]掷出了"%(receive["user_id"])+msg+"点！","at_sender":"false"}
                     print("reply_data:%s"%(reply_data))
                     return JsonResponse(reply_data)
-                if (receive["message"].find('/gif')==0):
+                if (receive["message"].find('/g ')==0):
                     sorry_dict = {"sorry":"好啊|就算你是一流工程师|就算你出报告再完美|我叫你改报告你就要改|毕竟我是客户|客户了不起啊|sorry 客户真的了不起|以后叫他天天改报告|天天改 天天改","wangjingze":"我就是饿死|死外边 从这跳下去|也不会吃你们一点东西|真香","jinkela":"金坷垃好处都有啥|谁说对了就给他|肥料掺了金坷垃|不流失 不蒸发 零浪费|肥料掺了金坷垃|能吸收两米下的氮磷钾","marmot":"啊~|啊~~~","dagong":"没有钱啊 肯定要做的啊|不做的话没有钱用|那你不会去打工啊|有手有脚的|打工是不可能打工的|这辈子不可能打工的","diandongche":"戴帽子的首先进里边去|开始拿剪刀出来 拿那个手机|手机上有电筒 用手机照射|寻找那个比较新的电动车|六月六号 两名男子再次出现|民警立即将两人抓获"}
                     sorry_name = {"sorry":"为所欲为","wangjingze":"王境泽","jinkela":"金坷垃","marmot":"土拨鼠","dagong":"窃格瓦拉","diandongche":"偷电动车"}
-                    receive_msg = receive["message"].replace('/gif','',1).strip()
+                    receive_msg = receive["message"].replace('/g','',1).strip()
                     if receive_msg=="list":
                         msg = ""
                         for (k,v) in sorry_dict.items():
@@ -323,7 +323,7 @@ def qqpost(req):
                                 now_template = k
                                 break
                         if (now_template=="" or len(receive_msg)==0 or receive_msg=="help"):
-                            msg = "/gif list : 目前可用模板\n/gif $template example : 查看模板$template的样例\n/gif $template $msg0|$msg1|... : 按照$msg0,$msg1...生成沙雕GIF\nPowered by sorry.xuty.tk"
+                            msg = "/g list : 目前可用模板\n/gif $template example : 查看模板$template的样例\n/gif $template $msg0|$msg1|... : 按照$msg0,$msg1...生成沙雕GIF\nPowered by sorry.xuty.tk"
                         else:
                             receive_msg = receive_msg.replace(now_template,"",1).strip()
                             if(receive_msg=="example"):
@@ -434,7 +434,7 @@ def reply_curran(recv):
         answered = True
     if args[0] == "/p":
         # grabbed from https://xivwb.gitee.io/#eure-1
-        br = webdriver.Chrome(chrome_options=options, executable_path='C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe') # latest version for chrome
+        br = webdriver.Chrome(chrome_options=options, executable_path='/usr/bin/chromedriver') # latest version for chrome
         br.get("https://xivwb.gitee.io/#eure-1")
         br.implicitly_wait(10)
         # print("***** %s" % br.page_source)
@@ -442,7 +442,9 @@ def reply_curran(recv):
         t = []
         for li in lines[:3]:
             items = li.find_elements_by_xpath("td")
-            t.append(u"【强风】 %s 持续 %s" % (items[0].text.split(" ")[1], items[2].text))
+            ts = time.mktime(time.strptime(items[0].text.split(" ")[1], "%H:%M:%S"))
+            dt = datetime.datetime.fromtimestamp(ts, pytz.timezone("Asia/Shanghai"))
+            t.append(u"【强风】 %s 持续 %s" % (dt.strftime("%H:%M:%S"), items[2].text))
         ret["reply"] = "\n".join(t)
         answered = True
         br.quit()
