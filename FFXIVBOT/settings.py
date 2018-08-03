@@ -80,6 +80,10 @@ DATABASES = {
 'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+"mycard": {
+    "ENGINE" : "django.db.backends.sqlite3",
+    "NAME" : os.path.join(BASE_DIR, "cards.cdb"),
     }
 }
 

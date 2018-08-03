@@ -3,7 +3,7 @@
 cmd_coolq="sudo docker run \
  -p 9000:9000 -p 5700:5700 \
  -e COOLQ_ACCOUNT=3309196071 -e COOLQ_URL='http://dlsec.cqp.me/cqp-xiaoi' \
- -v /home/islab/coolq:/home/user/coolq\
+ -v /home/islab/coolq:/home/user/coolq -v /home/islab/src/FFXIVBOT/card:/home/user/coolq/data/image/card\
  coolq/wine-coolq"
 
 tmux new-session -d -s ffxivbot

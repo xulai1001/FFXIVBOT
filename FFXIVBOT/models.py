@@ -97,3 +97,19 @@ class FFrecipe(models.Model):
 	
 	def __str__(self):
 		return str("%s_%s" % (self.name, self.recipe))
+
+class YGOText(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.TextField()
+    desc = models.TextField()
+    class Meta:
+        db_table = "texts"
+
+class YGOData(models.Model):
+    id = models.IntegerField(primary_key=True)
+    atk = models.IntegerField()
+    dfd = models.IntegerField(db_column="def")  # def is keyword, use dfd instead
+    level = models.IntegerField()
+    class Meta:
+        db_table = "datas"
+

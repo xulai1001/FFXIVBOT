@@ -10,7 +10,7 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from collections import OrderedDict
 from django.views.decorators.csrf import csrf_exempt
-import datetime
+import os, datetime
 import pytz
 import re
 import json
@@ -22,6 +22,7 @@ import math
 import requests
 import base64
 import random,sys
+from random import choice
 import traceback  
 import codecs
 import html
@@ -35,6 +36,7 @@ from FFXIVBOT.models import *
 
 # ffwall count
 ffwall_count = FFwall.objects.count()
+ts_reply = 0
 
 # crawler for pzz
 options = Options()
@@ -408,9 +410,10 @@ def qqpost(req):
         traceback.print_exc() 
 
 def reply_curran(recv):
+    global ts_reply
     answered = False
     cr_debug = False
-    args = recv["message"].split(" ")    
+    args = recv["message"].split()    
     # print(args)
     if "-dbg" in args: cr_debug = True
     ret = {"reply": ""}
@@ -418,6 +421,11 @@ def reply_curran(recv):
     # disable group at
     if recv["message_type"] != "private": ret["at_sender"] = False
     
+    # flow control
+    if recv["time"] - ts_reply < 15:
+        ret["reply"] = u"库兰兰cd中..."
+        return JsonResponse(ret)
+
     # commands
     try:
         # ffwall
@@ -449,6 +457,20 @@ def reply_curran(recv):
             ret["reply"] = "\n".join(t)
             answered = True
             br.quit()
+        if args[0] == "/draw":
+            # data from my-cards v2
+            filename = choice(os.listdir("card"))
+            idx = int(filename.split(".")[0])
+            text_item = YGOText.objects.using("mycard").filter(id=idx)
+            if text_item:
+                data_item = YGOData.objects.using("mycard").filter(id=idx)
+                ret["reply"] = "\r\n".join([
+                    "[CQ:image,file=card\\%s]" % filename, 
+                    text_item[0].name,
+                    text_item[0].desc
+                    ])
+                print(ret)
+                answered = True
     except:
         ret["reply"] = traceback.format_exc()
         cr_debug = True
@@ -456,6 +478,7 @@ def reply_curran(recv):
 
     # post-process
     if answered:
+        ts_reply = recv["time"]
         if cr_debug:
             ret["reply"] += "\nrecv: %s\nargs: %s\nreturn: %s" % (json.dumps(recv), json.dumps(args), json.dumps(ret))
         return JsonResponse(ret)
