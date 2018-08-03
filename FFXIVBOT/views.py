@@ -29,7 +29,7 @@ import hmac
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import urllib
+import urllib, traceback
 # Create your views here.
 from FFXIVBOT.models import *
 
@@ -215,7 +215,7 @@ def get_record(file_name):
 def qqpost(req):
     try:
         receive = json.loads(req.body.decode())
-        print(receive)
+       #  print(receive)
        # sig = hmac.new(b'pinkpink', req.body, 'sha1').hexdigest()
        # received_sig = req.META.get("HTTP_X_SIGNATURE","unknow")[len('sha1='):]
        # print(sig, received_sig)
@@ -411,7 +411,7 @@ def reply_curran(recv):
     answered = False
     cr_debug = False
     args = recv["message"].split(" ")    
-    print(args)
+    # print(args)
     if "-dbg" in args: cr_debug = True
     ret = {"reply": ""}
     
@@ -419,40 +419,45 @@ def reply_curran(recv):
     if recv["message_type"] != "private": ret["at_sender"] = False
     
     # commands
-    # ffwall
-    if args[0] == "/ffwall":
-        # ret["reply"] = ffwall_count.__str__()
-        if len(args) >= 3:
-            items = FFwall.objects.filter(GroupName=args[1], RoleName=args[2])
-        else:
-            items = FFwall.objects.filter(Id=random.randint(1, ffwall_count))
-        if items:
-            img = items[0].BigImage
-            ret["reply"] = {"type":"image","data":{"file":img} }
-        else:
-            ret["reply"] = "没有找到玩家:%s（须参加过三周年活动）" % args[2]
+    try:
+        # ffwall
+        if args[0] == "/ffwall":
+             # ret["reply"] = ffwall_count.__str__()
+            if len(args) >= 3:
+                items = FFwall.objects.filter(GroupName=args[1], RoleName=args[2])
+            else:
+                items = FFwall.objects.filter(Id=random.randint(1, ffwall_count))
+            if items:
+                img = items[0].BigImage
+                ret["reply"] = {"type":"image","data":{"file":img} }
+            else:
+                ret["reply"] = "没有找到玩家:%s（须参加过三周年活动）" % args[2]
+            answered = True
+        if args[0] == "/p":
+            # grabbed from https://xivwb.gitee.io/#eure-1
+            br = webdriver.Chrome(chrome_options=options, executable_path='/usr/bin/chromedriver') # latest version for chrome
+            br.get("https://xivwb.gitee.io/#eure-1")
+            br.implicitly_wait(10)
+            # print("***** %s" % br.page_source)
+            lines = br.find_elements_by_xpath("//div[@class='match']/table/tbody/tr")
+            t = []
+            for li in lines[:3]:
+                items = li.find_elements_by_xpath("td")
+                ts = time.mktime(time.strptime(items[0].text.split(" ")[1], "%H:%M:%S"))
+                dt = datetime.datetime.fromtimestamp(ts, pytz.timezone("Asia/Shanghai"))
+                t.append(u"【强风】 %s 持续 %s" % (dt.strftime("%H:%M:%S"), items[2].text))
+            ret["reply"] = "\n".join(t)
+            answered = True
+            br.quit()
+    except:
+        ret["reply"] = traceback.format_exc()
+        cr_debug = True
         answered = True
-    if args[0] == "/p":
-        # grabbed from https://xivwb.gitee.io/#eure-1
-        br = webdriver.Chrome(chrome_options=options, executable_path='/usr/bin/chromedriver') # latest version for chrome
-        br.get("https://xivwb.gitee.io/#eure-1")
-        br.implicitly_wait(10)
-        # print("***** %s" % br.page_source)
-        lines = br.find_elements_by_xpath("//div[@class='match']/table/tbody/tr")
-        t = []
-        for li in lines[:3]:
-            items = li.find_elements_by_xpath("td")
-            ts = time.mktime(time.strptime(items[0].text.split(" ")[1], "%H:%M:%S"))
-            dt = datetime.datetime.fromtimestamp(ts, pytz.timezone("Asia/Shanghai"))
-            t.append(u"【强风】 %s 持续 %s" % (dt.strftime("%H:%M:%S"), items[2].text))
-        ret["reply"] = "\n".join(t)
-        answered = True
-        br.quit()
-        
+
     # post-process
     if answered:
         if cr_debug:
-            ret["reply"] = "recv: %s\nargs: %s\nreturn: %s" % (json.dumps(recv), json.dumps(args), json.dumps(ret))
+            ret["reply"] += "\nrecv: %s\nargs: %s\nreturn: %s" % (json.dumps(recv), json.dumps(args), json.dumps(ret))
         return JsonResponse(ret)
     else:
         return HttpResponse(status=204)
