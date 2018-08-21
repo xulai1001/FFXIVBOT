@@ -21,8 +21,11 @@ for li in lines[:3]:
     items = li.find_elements_by_xpath("td")
     timestr = items[0].text.split(" ")[1]
     ts = time.mktime(time.strptime(timestr, "%H:%M:%S"))
-    dt = datetime.datetime.fromtimestamp(ts, pytz.timezone("Asia/Shanghai"))
+    dt = datetime.datetime.fromtimestamp(ts, pytz.timezone("utc")).astimezone(pytz.timezone("Asia/Shanghai"))
+    dt = dt - datetime.timedelta(minutes=6)
+    print(dt)
     tzstr = dt.strftime("%H:%M:%S")
     print(u"【强风】 %s 持续 %s" % (tzstr, items[2].text))
+   #  print(u"【强风】 %s 持续 %s" % (timestr, items[2].text))
 
 br.close()
